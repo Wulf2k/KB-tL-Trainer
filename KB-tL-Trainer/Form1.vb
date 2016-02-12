@@ -29,14 +29,15 @@ Public Class frmKBTL
     Dim playerYpos As Integer
     Dim playerZpos As Integer
 
-    Dim charposptr As UInteger = &H1B8D528
+    Dim charposptr As UInteger
+    Dim charposdispptr As UInteger
 
     Dim ctrlHeld As Boolean
     Dim mouseStartXPos As Integer
     Dim mouseStartYPos As Integer
     Dim charStartXPos As Single
-    Dim charstartYPos As Single
-    Dim charstartZpos As Single
+    Dim charStartYPos As Single
+    Dim charStartZpos As Single
 
     Public Function TryAttachToProcess(ByVal windowCaption As String) As Boolean
         Dim _allProcesses() As Process = Process.GetProcesses
@@ -159,25 +160,47 @@ Public Class frmKBTL
     End Sub
 
     Private Sub frmKBTL_Load(sender As Object, e As EventArgs) Handles MyBase.Load
-
-
         TryAttachToProcess("kingsbounty")
 
         refTimer = New System.Windows.Forms.Timer
         refTimer.Interval = 10
         refTimer.Enabled = True
         refTimer.Start()
-
-
     End Sub
 
     Private Sub refTimer_Tick() Handles refTimer.Tick
-        lblXpos.Text = ReadFloat(charposptr + &H50)
-        lblYPos.Text = ReadFloat(charposptr + &H54)
-        lblZPos.Text = ReadFloat(charposptr + &H58)
+        Dim tmpptr As Integer
+        charposptr = ReadInt32(ReadInt32(&H1B7BC48) + &H30)
+
+        playerXpos = Math.Round(ReadFloat(charposptr + &H50), 0)
+        playerYpos = Math.Round(ReadFloat(charposptr + &H54), 0)
+        playerZpos = Math.Round(ReadFloat(charposptr + &H58), 0)
+
+        lblXpos.Text = playerXpos
+        lblYPos.Text = playerYpos
+        lblZPos.Text = playerZpos
+
+        tmpptr = ReadUInt32(&H1B7BC48)
+        tmpptr = ReadUInt32(tmpptr + &H18)
+        tmpptr = ReadUInt32(tmpptr + &H40)
+        tmpptr = ReadUInt32(tmpptr + &H8)
+        If Not txtGold.Focused Then txtGold.Text = FormatNumber(ReadInt32(tmpptr + &H1C), 0)
+
+        tmpptr = ReadUInt32(&H1B80F7C)
+        tmpptr = ReadUInt32(tmpptr + &H1C)
+        tmpptr = ReadUInt32(tmpptr)
+        tmpptr = ReadUInt32(tmpptr + &H50)
+        tmpptr = ReadUInt32(tmpptr + &H110)
+        If Not txtLeadership.Focused Then txtLeadership.Text = FormatNumber(ReadInt32(tmpptr + &H8), 0)
+
+
+
+
     End Sub
 
     Private Shared Sub MouseMoveTimer_Tick() Handles mouseMoveTimer.Tick
+        'frmKBTL.charposdispptr = frmKBTL.ReadInt32(frmKBTL.ReadInt32(&H1B81194) + &H14)
+
 
         Dim ctrlkey As Boolean
         Dim shiftkey As Boolean
@@ -199,16 +222,43 @@ Public Class frmKBTL
         End If
 
         If ctrlkey Then
-            frmKBTL.WriteFloat(frmKBTL.charposptr + &H10, frmKBTL.charStartXPos + (MousePosition.X - frmKBTL.mouseStartXPos) * 0.1)
-            frmKBTL.WriteFloat(frmKBTL.charposptr + &H18, frmKBTL.charstartZpos + (MousePosition.Y - frmKBTL.mouseStartYPos) * 0.1)
+            frmKBTL.WriteFloat(frmKBTL.charposptr + &H50, frmKBTL.charStartXPos + (MousePosition.X - frmKBTL.mouseStartXPos) * 0.1)
+            frmKBTL.WriteFloat(frmKBTL.charposptr + &H58, frmKBTL.charstartZpos + (frmKBTL.mouseStartYPos - MousePosition.Y) * 0.1)
+
+            'frmKBTL.WriteFloat(frmKBTL.charposdispptr + &H30, frmKBTL.charStartXPos + (MousePosition.X - frmKBTL.mouseStartXPos) * 0.1)
+            'frmKBTL.WriteFloat(frmKBTL.charposdispptr + &H38, frmKBTL.charStartZpos + (frmKBTL.mouseStartYPos - MousePosition.Y) * 0.1)
         End If
 
         If shiftkey Then
-            frmKBTL.WriteFloat(frmKBTL.charposptr + &H14, frmKBTL.charstartYPos + (frmKBTL.mouseStartYPos - MousePosition.Y) * 0.1)
+            frmKBTL.WriteFloat(frmKBTL.charposptr + &H54, frmKBTL.charstartYPos + (frmKBTL.mouseStartYPos - MousePosition.Y) * 0.1)
+            'frmKBTL.WriteFloat(frmKBTL.charposdispptr + &H34, frmKBTL.charStartYPos + (frmKBTL.mouseStartYPos - MousePosition.Y) * 0.1)
         End If
 
         If Not ctrlkey And Not shiftkey Then
             frmKBTL.ctrlHeld = False
         End If
+    End Sub
+
+    Private Sub txtGold_TextChanged(sender As Object, e As EventArgs) Handles txtGold.LostFocus
+        Dim tmpptr As UInteger
+
+        tmpptr = ReadUInt32(&H1B7BC48)
+        tmpptr = ReadUInt32(tmpptr + &H18)
+        tmpptr = ReadUInt32(tmpptr + &H40)
+        tmpptr = ReadUInt32(tmpptr + &H8)
+
+        WriteInt32(tmpptr + &H1C, txtGold.Text)
+    End Sub
+
+    Private Sub txtLeadership_TextChanged(sender As Object, e As EventArgs) Handles txtLeadership.LostFocus
+        Dim tmpptr As UInteger
+
+        tmpptr = ReadUInt32(&H1B80F7C)
+        tmpptr = ReadUInt32(tmpptr + &H1C)
+        tmpptr = ReadUInt32(tmpptr)
+        tmpptr = ReadUInt32(tmpptr + &H50)
+        tmpptr = ReadUInt32(tmpptr + &H110)
+
+        WriteInt32(tmpptr + &H8, txtLeadership.Text)
     End Sub
 End Class
