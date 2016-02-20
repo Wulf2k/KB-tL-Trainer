@@ -47,7 +47,7 @@ Public Class frmKBTL
                 Return TryAttachToProcess(pp)
             End If
         Next
-        MessageBox.Show("Unable to find process '" & windowCaption & ".' Is running?")
+        MessageBox.Show("Unable to find process '" & windowCaption & ".' Is it running?")
         Return False
     End Function
     Public Function TryAttachToProcess(ByVal proc As Process) As Boolean
